@@ -167,5 +167,225 @@ f(1, ,2) // 报错
 f(1, undefined, 2) // [1, 5, 2]      // 若改为null，则没有这个效果，不能触发默认值
 ```
 **上面代码中，有默认值的参数都不是尾参数。这时，无法只省略该参数，而不省略它后面的参数，除非显式输入undefined。
-如果传入undefined，将触发该参数等于默认值，null则没有这个效果。
-**
+如果传入undefined，将触发该参数等于默认值，null则没有这个效果。**
+
+* rest参数：rest参数（形式为...变量名）搭配的变量是一个数组，该变量将多余的参数放入数组中，代替arguments对象
+
+```
+function add(...values) {
+  let sum = 0;
+
+  for (var val of values) {
+    sum += val;
+  }
+
+  return sum;
+}
+
+add(2, 5, 3) // 10
+```
+```
+下面是一个 rest 参数代替arguments变量的例子。
+// arguments变量的写法
+function sortNumbers() {
+  return Array.prototype.slice.call(arguments).sort();
+}
+
+// rest参数的写法
+const sortNumbers = (...numbers) => numbers.sort();
+```
+**rest 参数之后不能再有其他参数（即只能是最后一个参数），否则会报错**
+```
+function f(a, ...b, c) {       // 报错
+  // ...
+}
+```
+
+* name属性：返回该函数的函数名。
+* 箭头函数：使用“箭头”（ => ）定义函数
+```
+var sum = (num1, num2) => { return num1 + num2 };
+// 等同于
+var sum = function(num1, num2) {
+  return num1 + num2;
+};
+```
+**箭头函数使用需要注意：**
+**1.函数体内的this对象，就是定义时所在的对象，而不是使用时所在的对象。**
+```
+function Timer() {
+  this.s1 = 0;
+  this.s2 = 0;
+  setInterval(() => this.s1++, 1000);     // 箭头函数，this绑定定义时所在的作用域（即Timer函数）
+  setInterval(function () {       // 普通函数，this绑定的是运行时所在的作用域（即全局对象）
+    this.s2++;
+  }, 1000);
+}
+
+var timer = new Timer();
+
+setTimeout(() => console.log('s1: ', timer.s1), 3100);
+setTimeout(() => console.log('s2: ', timer.s2), 3100);
+// s1: 3
+// s2: 0
+```
+2.不可以当作构造函数，也就是说，不可以使用new命令，否则会抛出一个错误。
+3.不可以使用arguments对象，该对象在函数体内不存在。如果要用，可以用 rest 参数代替。   
+4.不可以使用yield命令，因此箭头函数不能用作 Generator 函数。
+```
+生成器函数（generator function）和 yield 通常会被用来演示生成斐波那契数列（前两个数字都是 1 ，除此之外任何数字都是前两个数之和的数列）
+function* fab(max) {                  // function 后跟上「*」即为生成器函数
+    var count = 0, last = 0, current = 1;
+
+    while(max > count++) {
+        yield current;              // 生成器函数通常和 yield 关键字同时使用。函数执行到每个 yield 时都会中断并返回 yield 的右值（通过 next 方法返回对象中的 value 字段）。下次调用 next，函数会从 yield 的下一个语句继续执行。等到整个函数执行完，next 方法返回的 done 字段会变成 true, 若函数未执行完，则next方法返回的 done 字段为 false
+        var tmp = current;
+        current += last;
+        last = tmp;
+    }
+}
+
+var o = fab(10), ret, result = [];
+
+while(!(ret = o.next()).done) {
+    result.push(ret.value);
+}
+
+console.log(result); // [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+```
+* 双冒号运算符：函数绑定运算符是并排的两个冒号（::），双冒号左边是一个对象，右边是一个函数。该运算符会自动将左边的对象，作为上下文环境（即this对象），绑定到右边的函数上面。用来取代call、apply、bind调用。
+```
+foo::bar;
+// 等同于
+bar.bind(foo);
+
+foo::bar(...arguments);
+// 等同于
+bar.apply(foo, arguments);
+
+var method = obj::obj.foo;
+// 等同于
+var method = ::obj.foo;
+```
+* 尾调用优化：指某个函数的最后一步是调用另一个函数
+```
+function f(x){
+  return g(x);
+}
+```
+* 尾递归：尾调用自身，就称为尾递归
+```
+正常递归（复杂度 O(n) ）：
+function factorial(n) {
+  if (n === 1) return 1;
+  return n * factorial(n - 1);
+}
+
+factorial(5) // 120
+
+尾递归（复杂度 O(1)）：
+function factorial(n, total) {
+  if (n === 1) return total;
+  return factorial(n - 1, n * total);
+}
+
+factorial(5, 1) // 120
+```
+```
+尾递归优化过的 Fibonacci 数列实现如下：
+function Fibonacci2 (n , ac1 = 1 , ac2 = 1) {
+  if( n <= 1 ) {return ac2};
+
+  return Fibonacci2 (n - 1, ac2, ac1 + ac2);
+}
+
+Fibonacci2(100) // 573147844013817200000
+Fibonacci2(1000) // 7.0330367711422765e+208
+```
+
+8.数组的扩展
+
+* 扩展运算符（spread）：三个点（...）。它好比rest参数的逆运算，将一个数组转为用逗号分隔的参数序列。能够替代函数的apply方法；
+```
+function add(x, y) {
+  return x + y;
+}
+
+const numbers = [4, 38];
+add(...numbers) // 42
+```
+```
+// ES5 的写法
+Math.max.apply(null, [14, 3, 77])
+
+// ES6 的写法
+Math.max(...[14, 3, 77])
+
+// 等同于
+Math.max(14, 3, 77);
+
+// ES6 的写法
+let arr1 = [0, 1, 2];
+let arr2 = [3, 4, 5];
+arr1.push(...arr2);
+```
+* 扩展运算符的应用:
+```
+复制数组： 
+const a1 = [1, 2];
+// 写法一
+const a2 = [...a1];
+// 写法二
+const [...a2] = a1;
+
+合并数组：
+var arr1 = ['a', 'b'];
+var arr2 = ['c'];
+[...arr1, ...arr2]
+// [ 'a', 'b', 'c']
+
+与解构赋值结合：（扩展运算符用于数组赋值，只能放在参数的最后一位，否则会报错）
+const [first, ...rest] = [1, 2, 3, 4, 5];
+first // 1
+rest  // [2, 3, 4, 5]
+
+const [...butLast, last] = [1, 2, 3, 4, 5];
+// 报错
+
+字符串：扩展运算符还可以将字符串转为真正的数组。
+[...'hello']
+// [ "h", "e", "l", "l", "o" ]
+
+Map 和 Set 结构，Generator 函数：
+let map = new Map([
+  [1, 'one'],
+  [2, 'two'],
+  [3, 'three'],
+]);
+
+let arr = [...map.keys()]; // [1, 2, 3]
+
+const go = function*(){
+  yield 1;
+  yield 2;
+  yield 3;
+};
+
+[...go()] // [1, 2, 3]
+```
+* Array.of()：将一组值，转换为数组；弥补数组构造函数Array()的不足。
+```
+Array.of(3, 11, 8) // [3,11,8]
+Array(3) // [, , ,]
+Array(3, 11, 8) // [3, 11, 8]
+* 只有当参数个数不少于 2 个时，Array()才会返回由参数组成的新数组。参数个数只有一个时，实际上是指定数组的长度。
+```
+* copyWithin()：在当前数组内部，将指定位置的成员复制到其他位置（会覆盖原有成员），然后返回当前数组。使用这个方法，会修改当前数组。
+它接受三个参数：
+-target（必需）：从该位置开始替换数据。如果为负值，表示倒数。
+-start（可选）：从该位置开始读取数据，默认为 0。如果为负值，表示倒数。
+-end（可选）：到该位置前停止读取数据，默认等于数组长度。如果为负值，表示倒数。
+```
+[1, 2, 3, 4, 5].copyWithin(0, 3)
+// [4, 5, 3, 4, 5]
+```
